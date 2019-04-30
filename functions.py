@@ -32,6 +32,7 @@ def knapSack(W, w, v):
     print(f'\nBinary String: {binaryOut}')
     return binaryOut
 
+# https://www.geeksforgeeks.org/0-1-knapsack-problem-dp-10/
 # A Dynamic Programming based Python Program for 0-1 Knapsack problem 
 # Returns the maximum value that can be put in a knapsack of capacity W 
 def knapSackDynamic(W, wt, val, n): 
@@ -49,6 +50,7 @@ def knapSackDynamic(W, wt, val, n):
   
     return K[n][W] 
 
+# https://www.geeksforgeeks.org/0-1-knapsack-problem-dp-10/
 # Returns the maximum value that can be put in a knapsack of 
 # capacity W 
 def knapSackG2G(W , wt , val , n): 
