@@ -1,5 +1,68 @@
-def knapSack(W, w, v):
-    """ RATIO DRIVEN KNAPSACK FUNCTION """
+import math
+import numpy as np
+
+def penaltyNonlinear(k:float, capacity:int, weight, i:int ):
+    """ DERIVE A NON-LINEAR PENALTY VALUE : RAISE PENALTY WITH TIME """
+    violation:float = weight - capacity
+    violation = abs(violation)
+    penalty:float = k * math.log((violation**i)+1)
+    return penalty
+
+def knapSackBinaryNonlinear(binary:list, W:int, w:list, v:list):
+    """ READ BINARY STREAM FIND TOTAL VALUE INVOKE PENALTY (LINEAR) IF NECESSARY """
+    k       : int   = 3
+    totalV  : int   = 0
+    totalW  : int   = 0
+    capacity: int   = W
+    exceeds : bool  = False
+    penalty : float = 0
+    fitness : float = 0
+    for i, bit in enumerate(binary):
+        if bit == '1':
+            if totalW + w[i] > capacity:
+                exceeds = not exceeds
+                totalW += w[i]
+                """ INVOKE PENALTY TO VALUE WHEN INFEASIBLE | PICK K """
+                penalty = penaltyNonlinear(k, capacity, totalW, i)
+                totalV += (v[i] - penalty)
+            else:
+                totalW += w[i]
+                totalV += v[i]
+    print(f'\t{binary}\tCapacity: {totalW}/{W}\t totalV: {totalV:.1f}\tk: {k}\tPenalty: {penalty:.1f}')
+    return totalV
+
+def penaltyStatic(k:float, capacity:int, weight ):
+    """ DERIVE A STATIC PENALTY VALUE """
+    violation:float = weight - capacity
+    violation = abs(violation)
+    penalty:float = k * math.log(violation+1)
+    return penalty
+
+def knapSackBinarySublinear(binary:list, W:int, w:list, v:list):
+    """ READ BINARY STREAM FIND TOTAL VALUE INVOKE PENALTY (LINEAR) IF NECESSARY """
+    k       : int   = 3
+    totalV  : int   = 0
+    totalW  : int   = 0
+    capacity: int   = W
+    exceeds : bool  = False
+    penalty : float = 0
+    fitness : float = 0
+    for i, bit in enumerate(binary):
+        if bit == '1':
+            if totalW + w[i] > capacity:
+                exceeds = not exceeds
+                totalW += w[i]
+                """ INVOKE PENALTY TO VALUE WHEN INFEASIBLE | PICK K """
+                penalty = penaltyStatic(k, capacity, totalW)
+                totalV += (v[i] - penalty)
+            else:
+                totalW += w[i]
+                totalV += v[i]
+    print(f'\t{binary}\tCapacity: {totalW}/{W}\t totalV: {totalV:.1f}\tk: {k}\tPenalty: {penalty:.1f}')
+    return totalV
+
+def knapSack(W:int, w:list, v:list):
+    """ RATIO DRIVEN KNAPSACK FUNCTION NO PENALTY RETURNS BEST FIT BIT STREAM """
     count = 0
     n = len(w)
     assert len(w) == len(v), "ERROR: w list and v list must be equal length"
@@ -10,63 +73,31 @@ def knapSack(W, w, v):
     for i in range(0, n):
         ratio.append(v[i]/w[i])
     """ Duplicate ratio to preserve original for reference """
-    nRatio = ratio
-    tempW = w[nRatio.index(max(nRatio))]
+    nRatio = ratio.copy()
+    tempW = 0
     """ Place best ratio items in knapsack while they fit """
     while(tempW <= W and count < n):
-        idx = ratio.index(max(nRatio))
-        tempW += w[idx]
-        nRatio[idx] = -1
-        outIdx.append(idx)
+        idx = nRatio.index(max(nRatio))
+        if(tempW + w[idx] > W): 
+            penaltyStatic(1, W, tempW)
+            nRatio[idx] = -1 
+        else:
+            tempW += w[idx]
+            nRatio[idx] = -1
+            outIdx.append(idx)
         count += 1
     """ Pretty-print variables """
     wp = ["%03d" %i for i in w]
     vp = ["%03d" %i for i in v]
+    rp = ["%.1f" %i for i in ratio]
     outIdxp = ["%03d" %i for i in outIdx]
-    print(f'w:{wp}\nv:{vp}\ni:{outIdxp}')
+    print(f'\tv:{vp}\n\tw:{wp}\n\ti:{outIdxp}\n\tr:{rp}')
     for i in range (0, n):
         if i in outIdx:
             binaryOut[i] = 1
         else: 
             binaryOut[i] = 0
-    print(f'\nBinary String: {binaryOut}')
+    strBin = "".join(str(x) for x in binaryOut)
+    print(f'\n Maximized Binary String: \'{strBin}\'')
+    print(f' Sack Capacity: {tempW} / {W}')
     return binaryOut
-
-# https://www.geeksforgeeks.org/0-1-knapsack-problem-dp-10/
-# A Dynamic Programming based Python Program for 0-1 Knapsack problem 
-# Returns the maximum value that can be put in a knapsack of capacity W 
-def knapSackDynamic(W, wt, val, n): 
-    K = [[0 for x in range(W+1)] for x in range(n+1)] 
-  
-    # Build table K[][] in bottom up manner 
-    for i in range(n+1): 
-        for w in range(W+1): 
-            if i==0 or w==0: 
-                K[i][w] = 0
-            elif wt[i-1] <= w: 
-                K[i][w] = max(val[i-1] + K[i-1][w-wt[i-1]],  K[i-1][w]) 
-            else: 
-                K[i][w] = K[i-1][w] 
-  
-    return K[n][W] 
-
-# https://www.geeksforgeeks.org/0-1-knapsack-problem-dp-10/
-# Returns the maximum value that can be put in a knapsack of 
-# capacity W 
-def knapSackG2G(W , wt , val , n): 
-  
-    # Base Case 
-    if n == 0 or W == 0 : 
-        return 0
-  
-    # If weight of the nth item is more than Knapsack of capacity 
-    # W, then this item cannot be included in the optimal solution 
-    if (wt[n-1] > W): 
-        return knapSack(W , wt , val , n-1) 
-  
-    # return the maximum of two cases: 
-    # (1) nth item included 
-    # (2) not included 
-    else: 
-        return max(val[n-1] + knapSack(W-wt[n-1] , wt , val , n-1), 
-                   knapSack(W , wt , val , n-1)) 
